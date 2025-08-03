@@ -1,0 +1,2 @@
+yt-dlp>=2023.1.6
+pathlib2;python_version<'3.4' 
