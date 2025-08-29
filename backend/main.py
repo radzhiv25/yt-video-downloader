@@ -1,113 +1,160 @@
-# backend/main.py
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from starlette.background import BackgroundTask
-from pydantic import BaseModel
-import yt_dlp
+#!/usr/bin/env python3
+"""
+YouTube Downloader Backend Service
+A FastAPI-based web service for downloading YouTube videos
+"""
+
 import os
-import uuid
-from supabase import create_client, Client
+import asyncio
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
+from typing import Optional, List
+import uvicorn
+from youtube_downloader_lib.downloader import YouTubeDownloader
 
-app = FastAPI()
+# Initialize FastAPI app
+app = FastAPI(
+    title="YouTube Downloader API",
+    description="A fast and secure YouTube video downloader API",
+    version="1.0.0"
+)
 
-# Allow requests from the frontend (React/Next.js) running on localhost:3000
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],
+    allow_origins=["http://localhost:3000", "https://yourdomain.com"],  # Update with your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Define the expected request body (a JSON with a 'url' and optional 'type' field)
+# Initialize downloader
+downloader = YouTubeDownloader()
+
+# Request models
 class DownloadRequest(BaseModel):
     url: str
-    type: str = 'video'  # default to video if not provided
+    format: str = "mp4"  # mp4, mp3
+    quality: str = "best"  # best, 720p, 1080p, etc.
 
-# Function to delete the downloaded file after sending it to the user
-# This keeps your /tmp folder clean
-def cleanup_file(path):
-    try:
-        os.remove(path)
-    except Exception:
-        pass
+class DownloadResponse(BaseModel):
+    success: bool
+    message: str
+    download_url: Optional[str] = None
+    filename: Optional[str] = None
+    error: Optional[str] = None
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://pypkhwzachxkyzubbrjr.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5cGtod3phY2h4a3l6dWJicmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjQ0MzEsImV4cCI6MjA2Nzc0MDQzMX0.xsgswCYsNa1-9ztc6Zv8WsR6QYyW3t6PzaN9-QO5EVg")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Docker and monitoring"""
+    return {"status": "healthy", "service": "youtube-downloader"}
 
-@app.post("/download")
-async def download_video(request: DownloadRequest):
-    # Generate a unique filename for this download (prevents file conflicts)
-    temp_id = str(uuid.uuid4())
-    output_base = f"/tmp/{temp_id}"
-
-    if request.type == 'audio':
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': output_base + ".%(ext)s",
-            'quiet': True,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
+@app.get("/")
+async def root():
+    """Root endpoint with API information"""
+    return {
+        "message": "YouTube Downloader API",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "download": "/download",
+            "info": "/info"
         }
-    else:
-        ydl_opts = {
-            'format': '137+251',
-            'outtmpl': output_base + ".%(ext)s",
-            'merge_output_format': 'mp4',
-            'quiet': True,
-        }
+    }
+
+@app.get("/info")
+async def get_video_info(url: str):
+    """Get information about a YouTube video"""
     try:
-        # Download and merge the video+audio using yt-dlp
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(request.url, download=True)
-            if request.type == 'audio':
-                # Look for the mp3 file
-                audio_file = output_base + '.mp3'
-                if not os.path.exists(audio_file):
-                    raise HTTPException(status_code=500, detail="Download failed: audio file not found.")
-                return FileResponse(
-                    audio_file,
-                    media_type='audio/mpeg',
-                    filename=info.get('title', 'audio') + '.mp3',
-                    background=BackgroundTask(cleanup_file, audio_file)
-                )
-            else:
-                # Try to get the actual output filename from yt-dlp info
-                merged_file = info.get('_filename')
-                # Fallback: check for common extensions if the file does not exist
-                if not merged_file or not os.path.exists(merged_file):
-                    for ext in ['.mp4', '.mkv', '.webm']:
-                        candidate = output_base + ext
-                        if os.path.exists(candidate):
-                            merged_file = candidate
-                            break
-                if not merged_file or not os.path.exists(merged_file):
-                    raise HTTPException(status_code=500, detail="Download failed: merged video file not found.")
-                return FileResponse(
-                    merged_file,
-                    media_type='video/mp4',  # Tell the browser this is a video file
-                    filename=info.get('title', 'video') + '.mp4',  # Suggest a filename for the user
-                    background=BackgroundTask(cleanup_file, merged_file)  # Clean up after sending
-                )
-    except yt_dlp.utils.DownloadError as e:
-        # If yt-dlp fails (e.g., invalid URL), return an error to the frontend
-        raise HTTPException(status_code=400, detail=str(e))
+        info = downloader.get_video_info(url)
+        return {
+            "success": True,
+            "info": info
+        }
     except Exception as e:
-        # Catch-all for any other errors
-        raise HTTPException(status_code=400, detail=f"Invalid request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/increment-download")
-async def increment_download():
-    stats = supabase.table("stats").select("id,downloads_today").execute()
-    if stats.data and len(stats.data) > 0:
-        row = stats.data[0]
-        supabase.table("stats").update({"downloads_today": row["downloads_today"] + 1}).eq("id", row["id"]).execute()
-    else:
-        # If no row exists, create one with downloads_today = 1
-        supabase.table("stats").insert({"downloads_today": 1}).execute()
-    return {"status": "ok"}
+@app.post("/download", response_model=DownloadResponse)
+async def download_video(request: DownloadRequest, background_tasks: BackgroundTasks):
+    """Download a YouTube video"""
+    try:
+        # Validate URL
+        if not request.url or "youtube.com" not in request.url and "youtu.be" not in request.url:
+            raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+        
+        # Get video info first
+        video_info = downloader.get_video_info(request.url)
+        
+        # Download the video
+        if request.format == "mp3":
+            filename = downloader.download_audio(request.url, quality=request.quality)
+        else:
+            filename = downloader.download_video(request.url, quality=request.quality)
+        
+        # Create download URL
+        download_url = f"/download-file/{filename}"
+        
+        return DownloadResponse(
+            success=True,
+            message="Download completed successfully",
+            download_url=download_url,
+            filename=filename
+        )
+        
+    except Exception as e:
+        return DownloadResponse(
+            success=False,
+            message="Download failed",
+            error=str(e)
+        )
+
+@app.get("/download-file/{filename}")
+async def download_file(filename: str):
+    """Download a file by filename"""
+    file_path = os.path.join(downloader.download_dir, filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type='application/octet-stream'
+    )
+
+@app.get("/stats")
+async def get_stats():
+    """Get download statistics"""
+    try:
+        downloads_today = len([f for f in os.listdir(downloader.download_dir) 
+                             if f.endswith(('.mp4', '.mp3'))])
+        
+        return {
+            "downloads_today": downloads_today,
+            "happy_users": 1000,  # Placeholder
+            "system_uptime": "99.9%",  # Placeholder
+            "user_rating": 4.8  # Placeholder
+        }
+    except Exception as e:
+        return {
+            "downloads_today": 0,
+            "happy_users": 0,
+            "system_uptime": "0%",
+            "user_rating": 0
+        }
+
+if __name__ == "__main__":
+    # Create download directory if it doesn't exist
+    os.makedirs(downloader.download_dir, exist_ok=True)
+    
+    # Run the server
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

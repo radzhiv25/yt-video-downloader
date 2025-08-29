@@ -1,0 +1,48 @@
+{
+  "name": "youtube-downloader",
+  "version": "1.0.0",
+  "description": "A monorepo containing a YouTube video downloader with Python backend and Next.js frontend",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspaces",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:frontend": "npm run start --workspace=frontend",
+    "start:backend": "npm run start --workspace=backend",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules",
+    "install:all": "npm install && npm run install:backend",
+    "install:backend": "cd backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/youtube-downloader.git"
+  },
+  "keywords": [
+    "youtube",
+    "downloader",
+    "monorepo",
+    "python",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
+
