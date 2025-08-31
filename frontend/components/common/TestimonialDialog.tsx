@@ -21,11 +21,10 @@ interface TestimonialDialogProps {
   setSubmitting: Dispatch<SetStateAction<boolean>>;
   testimonials: Testimonial[];
   setTestimonials: Dispatch<SetStateAction<Testimonial[]>>;
-  supabase: any; // TODO: Replace with proper Supabase client type
   onTestimonialAdded?: () => void; // Callback to refresh stats
 }
 
-export function TestimonialDialog({ testimonialForm, setTestimonialForm, submitting, setSubmitting, testimonials, setTestimonials, supabase, onTestimonialAdded }: TestimonialDialogProps) {
+export function TestimonialDialog({ testimonialForm, setTestimonialForm, submitting, setSubmitting, testimonials, setTestimonials, onTestimonialAdded }: TestimonialDialogProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,24 +42,15 @@ export function TestimonialDialog({ testimonialForm, setTestimonialForm, submitt
     setTestimonials([toSend, ...testimonials]);
     setTestimonialForm({ name: "", role: "", content: "", rating: 5 });
     setOpen(false);
-    // Insert into supabase
-    const { error: insertError } = await supabase.from('testimonials').insert([toSend]);
-    if (insertError) {
-      setError("Failed to submit testimonial. Please try again.");
-      // Remove the optimistically added testimonial
-      setTestimonials(testimonials);
-      setOpen(true); // Reopen dialog to show error
-    } else {
-      // Call backend to update user rating
-      try {
-        await fetch('/api/update-rating', { method: 'POST' });
-        // Call callback to refresh stats if provided
-        if (onTestimonialAdded) {
-          onTestimonialAdded();
-        }
-      } catch (error) {
-        console.error('Failed to update user rating:', error);
+    // For static export, just call backend
+    try {
+      await fetch('/api/update-rating', { method: 'POST' });
+      // Call callback to refresh stats if provided
+      if (onTestimonialAdded) {
+        onTestimonialAdded();
       }
+    } catch (err) {
+      console.error('Failed to update user rating:', err);
     }
     setSubmitting(false);
   };

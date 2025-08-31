@@ -1,11 +1,10 @@
 "use client"
 
-import { Suspense } from "react"
+import { useState } from "react"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Card, CardContent } from "../../components/ui/card"
-import { Download, Music, Video, FileAudio, FileVideo } from "lucide-react"
-import { Downloader } from "../../components/downloader"
+import { Download, Music, Loader2, Check } from "lucide-react"
 import { Skeleton } from "../../components/ui/skeleton"
 import { Label } from "../../components/ui/label"
 import { toast } from "sonner"
@@ -86,9 +85,10 @@ export default function DownloadPage() {
         setError(msg)
         toast.error(msg)
       }
-    } catch (err: any) {
-      setError("Network error: " + err.message)
-      toast.error("Network error: " + err.message)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      setError("Network error: " + errorMessage)
+      toast.error("Network error: " + errorMessage)
     } finally {
       setIsLoading(false)
       setShowSkeleton(false)

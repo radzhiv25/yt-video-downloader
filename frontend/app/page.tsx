@@ -6,7 +6,7 @@ import { Download, Music, Shield, Zap, Star, Github, Play, CheckCircle, ArrowRig
 import Link from "next/link"
 import { Navbar } from "../components/common/navbar"
 import { useState, useEffect } from "react"
-import { supabase } from "../lib/supabaseClient"
+
 import { TestimonialDialog } from "../components/common/TestimonialDialog"
 import { Avatar } from "../components/ui/avatar"
 
@@ -66,50 +66,23 @@ export default function HomePage() {
     // Initial load of stats and testimonials
     refreshStats()
 
-    // Fetch testimonials only if Supabase is available
-    if (supabase) {
-      supabase.from('testimonials').select('*').order('created_at', { ascending: false }).then((res) => {
-        const data = res.data
-        if (data) setTestimonials(data)
-      }).catch(err => {
-        console.error('Failed to fetch testimonials:', err)
-        // Set some placeholder testimonials if Supabase fails
-        setTestimonials([
-          {
-            name: "John Doe",
-            role: "Developer",
-            content: "Great tool! Works perfectly for downloading videos.",
-            rating: 5,
-            created_at: new Date().toISOString()
-          },
-          {
-            name: "Jane Smith",
-            role: "Content Creator",
-            content: "Exactly what I needed. Fast and reliable.",
-            rating: 5,
-            created_at: new Date().toISOString()
-          }
-        ])
-      })
-    } else {
-      // Set placeholder testimonials if Supabase is not available
-      setTestimonials([
-        {
-          name: "John Doe",
-          role: "Developer",
-          content: "Great tool! Works perfectly for downloading videos.",
-          rating: 5,
-          created_at: new Date().toISOString()
-        },
-        {
-          name: "Jane Smith",
-          role: "Content Creator",
-          content: "Exactly what I needed. Fast and reliable.",
-          rating: 5,
-          created_at: new Date().toISOString()
-        }
-      ])
-    }
+    // For static export, use placeholder testimonials
+    setTestimonials([
+      {
+        name: "John Doe",
+        role: "Developer",
+        content: "Great tool! Works perfectly for downloading videos.",
+        rating: 5,
+        created_at: new Date().toISOString()
+      },
+      {
+        name: "Jane Smith",
+        role: "Content Creator",
+        content: "Exactly what I needed. Fast and reliable.",
+        rating: 5,
+        created_at: new Date().toISOString()
+      }
+    ])
   }, [])
 
   const faqs = [
@@ -355,16 +328,15 @@ export default function HomePage() {
             </p>
           </div>
 
-          <TestimonialDialog
-            testimonialForm={testimonialForm}
-            setTestimonialForm={setTestimonialForm}
-            submitting={submitting}
-            setSubmitting={setSubmitting}
-            testimonials={testimonials}
-            setTestimonials={setTestimonials}
-            supabase={supabase}
-            onTestimonialAdded={refreshStats}
-          />
+                      <TestimonialDialog
+              testimonialForm={testimonialForm}
+              setTestimonialForm={setTestimonialForm}
+              submitting={submitting}
+              setSubmitting={setSubmitting}
+              testimonials={testimonials}
+              setTestimonials={setTestimonials}
+              onTestimonialAdded={refreshStats}
+            />
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (

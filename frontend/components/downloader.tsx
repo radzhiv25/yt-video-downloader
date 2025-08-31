@@ -13,7 +13,7 @@ export default function Downloader() {
   const [error, setError] = useState('')
   const [showSkeleton, setShowSkeleton] = useState(false)
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setShowSkeleton(true)
@@ -59,9 +59,10 @@ export default function Downloader() {
         setError(msg)
         toast.error(msg)
       }
-    } catch (err: any) {
-      setError('Network error: ' + err.message)
-      toast.error('Network error: ' + err.message)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      setError('Network error: ' + errorMessage)
+      toast.error('Network error: ' + errorMessage)
     } finally {
       setLoading(false)
       setShowSkeleton(false)
