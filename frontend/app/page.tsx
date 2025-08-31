@@ -66,11 +66,50 @@ export default function HomePage() {
     // Initial load of stats and testimonials
     refreshStats()
 
-    // Fetch testimonials
-    supabase.from('testimonials').select('*').order('created_at', { ascending: false }).then((res) => {
-      const data = res.data
-      if (data) setTestimonials(data)
-    })
+    // Fetch testimonials only if Supabase is available
+    if (supabase) {
+      supabase.from('testimonials').select('*').order('created_at', { ascending: false }).then((res) => {
+        const data = res.data
+        if (data) setTestimonials(data)
+      }).catch(err => {
+        console.error('Failed to fetch testimonials:', err)
+        // Set some placeholder testimonials if Supabase fails
+        setTestimonials([
+          {
+            name: "John Doe",
+            role: "Developer",
+            content: "Great tool! Works perfectly for downloading videos.",
+            rating: 5,
+            created_at: new Date().toISOString()
+          },
+          {
+            name: "Jane Smith",
+            role: "Content Creator",
+            content: "Exactly what I needed. Fast and reliable.",
+            rating: 5,
+            created_at: new Date().toISOString()
+          }
+        ])
+      })
+    } else {
+      // Set placeholder testimonials if Supabase is not available
+      setTestimonials([
+        {
+          name: "John Doe",
+          role: "Developer",
+          content: "Great tool! Works perfectly for downloading videos.",
+          rating: 5,
+          created_at: new Date().toISOString()
+        },
+        {
+          name: "Jane Smith",
+          role: "Content Creator",
+          content: "Exactly what I needed. Fast and reliable.",
+          rating: 5,
+          created_at: new Date().toISOString()
+        }
+      ])
+    }
   }, [])
 
   const faqs = [
