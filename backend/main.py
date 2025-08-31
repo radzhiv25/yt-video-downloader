@@ -88,11 +88,23 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
         # Get video info first
         video_info = downloader.get_video_info(request.url)
         
-        # Download the video
+        # Download the video or audio
         if request.format == "mp3":
-            filename = downloader.download_audio(request.url, quality=request.quality)
+            result = downloader.download_audio(request.url)
         else:
-            filename = downloader.download_video(request.url, quality=request.quality)
+            result = downloader.download_video(request.url)
+        
+        # Check if download was successful
+        if not result.get('success'):
+            return DownloadResponse(
+                success=False,
+                message="Download failed",
+                error=result.get('error', 'Unknown error')
+            )
+        
+        # Extract filename from the result
+        file_path = result.get('file_path', '')
+        filename = os.path.basename(file_path) if file_path else ''
         
         # Create download URL
         download_url = f"/download-file/{filename}"
@@ -114,7 +126,7 @@ async def download_video(request: DownloadRequest, background_tasks: BackgroundT
 @app.get("/download-file/{filename}")
 async def download_file(filename: str):
     """Download a file by filename"""
-    file_path = os.path.join(downloader.download_dir, filename)
+    file_path = os.path.join(downloader.temp_dir, filename)
     
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
@@ -129,7 +141,7 @@ async def download_file(filename: str):
 async def get_stats():
     """Get download statistics"""
     try:
-        downloads_today = len([f for f in os.listdir(downloader.download_dir) 
+        downloads_today = len([f for f in os.listdir(downloader.temp_dir) 
                              if f.endswith(('.mp4', '.mp3'))])
         
         return {
@@ -148,7 +160,7 @@ async def get_stats():
 
 if __name__ == "__main__":
     # Create download directory if it doesn't exist
-    os.makedirs(downloader.download_dir, exist_ok=True)
+    os.makedirs(downloader.temp_dir, exist_ok=True)
     
     # Run the server
     uvicorn.run(

@@ -21,7 +21,7 @@
     "test": "npm run test --workspaces",
     "clean": "npm run clean --workspaces && rm -rf node_modules",
     "install:all": "npm install && npm run install:backend",
-    "install:backend": "cd backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+    "install:backend": "cd backend && python3 -m venv venv && source venv/bin/activate && pip3 install -r requirements.txt"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
@@ -45,4 +45,3 @@
   "author": "Your Name",
   "license": "MIT"
 }
-
