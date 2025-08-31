@@ -1,10 +1,10 @@
 // Downloader UI moved from page.tsx
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Input } from './ui/input'
+import { Button } from './ui/button'
+import { Label } from './ui/label'
+import { Skeleton } from './ui/skeleton'
 import { toast } from "sonner"
 
 export default function Downloader() {

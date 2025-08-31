@@ -1,13 +1,13 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Download, Music, ArrowLeft, Check, Loader2 } from "lucide-react"
-import Link from "next/link"
-import { useState } from "react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Label } from "@/components/ui/label"
+import { Suspense } from "react"
+import { Button } from "../../components/ui/button"
+import { Input } from "../../components/ui/input"
+import { Card, CardContent } from "../../components/ui/card"
+import { Download, Music, Video, FileAudio, FileVideo } from "lucide-react"
+import { Downloader } from "../../components/downloader"
+import { Skeleton } from "../../components/ui/skeleton"
+import { Label } from "../../components/ui/label"
 import { toast } from "sonner"
 
 export default function DownloadPage() {

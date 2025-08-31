@@ -1,14 +1,14 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "../components/ui/button"
+import { Card, CardContent } from "../components/ui/card"
 import { Download, Music, Shield, Zap, Star, Github, Play, CheckCircle, ArrowRight, Plus, Minus } from "lucide-react"
 import Link from "next/link"
-import { Navbar } from "@/components/common/navbar"
+import { Navbar } from "../components/common/navbar"
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabaseClient"
-import { TestimonialDialog } from "@/components/common/TestimonialDialog"
-import { Avatar } from "@/components/ui/avatar"
+import { supabase } from "../lib/supabaseClient"
+import { TestimonialDialog } from "../components/common/TestimonialDialog"
+import { Avatar } from "../components/ui/avatar"
 
 // Types
 interface Stat {
